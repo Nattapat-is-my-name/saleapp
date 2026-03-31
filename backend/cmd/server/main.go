@@ -95,6 +95,7 @@ func main() {
 	productRepo := repository.NewProductRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
+	paymentRepo := repository.NewPaymentRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo)
@@ -102,6 +103,8 @@ func main() {
 	customerService := service.NewCustomerService(customerRepo)
 	orderService := service.NewOrderService(orderRepo, productRepo, customerRepo)
 	reportingService := service.NewReportingService(orderRepo, productRepo)
+	paymentService := service.NewPaymentService(paymentRepo, orderRepo)
+	paymentService.InitStripe()
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService, jwtMiddleware)
@@ -109,6 +112,7 @@ func main() {
 	customerHandler := handler.NewCustomerHandler(customerService)
 	orderHandler := handler.NewOrderHandler(orderService)
 	reportingHandler := handler.NewReportingHandler(reportingService)
+	paymentHandler := handler.NewPaymentHandler(paymentService)
 
 	// Rate limiter
 	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
@@ -138,6 +142,9 @@ func main() {
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
+		// Stripe webhook (must be before auth - Stripe calls this directly)
+		v1.POST("/payments/webhook", paymentHandler.HandleWebhook)
+
 		// Auth routes (public)
 		auth := v1.Group("/auth")
 		{
@@ -145,6 +152,14 @@ func main() {
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/logout", authHandler.Logout)
 			auth.GET("/me", jwtMiddleware.AuthRequired(), authHandler.Me)
+		}
+
+		// Payment routes (protected)
+		payments := v1.Group("/payments")
+		payments.Use(jwtMiddleware.AuthRequired())
+		{
+			payments.POST("/intent", paymentHandler.CreatePaymentIntent)
+			payments.GET("/:orderId", paymentHandler.GetPaymentStatus)
 		}
 
 		// Products routes (protected)
@@ -256,6 +271,7 @@ func initDatabase(cfg *config.Config, zlog *zerolog.Logger) (*gorm.DB, error) {
 		&models.Customer{},
 		&models.Order{},
 		&models.OrderItem{},
+		&models.Payment{},
 	); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}

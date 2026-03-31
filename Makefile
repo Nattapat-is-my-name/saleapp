@@ -146,3 +146,16 @@ mocks:
 	cd $(BACKEND_DIR) && mockgen -source=internal/repository/product_repo.go -destination=internal/repository/mocks/product_repo_mock.go -package=mocks
 	cd $(BACKEND_DIR) && mockgen -source=internal/repository/order_repo.go -destination=internal/repository/mocks/order_repo_mock.go -package=mocks
 	cd $(BACKEND_DIR) && mockgen -source=internal/repository/customer_repo.go -destination=internal/repository/mocks/customer_repo_mock.go -package=mocks
+
+# ===================
+# Stripe targets
+# ===================
+
+stripe-webhook:
+	./scripts/stripe-webhook.sh
+
+stripe-login:
+	stripe login
+
+stripe-sample-data:
+	cd $(BACKEND_DIR) && stripe fixture fixtures.json

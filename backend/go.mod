@@ -10,8 +10,8 @@ require (
 	github.com/rs/zerolog v1.31.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/viper v1.18.2
+	github.com/stripe/stripe-go/v76 v76.25.0
 	golang.org/x/crypto v0.16.0
-	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
 )
@@ -59,4 +59,5 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

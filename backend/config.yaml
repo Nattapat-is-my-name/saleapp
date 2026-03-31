@@ -15,5 +15,10 @@ jwt:
   secret: "your-secret-key-change-in-production-min-32-chars"
   expiry_hours: 24
 
+stripe:
+  secret_key: "${STRIPE_SECRET_KEY}"
+  webhook_secret: "${STRIPE_WEBHOOK_SECRET}"
+  currency: "usd"
+
 log:
   level: "debug"
