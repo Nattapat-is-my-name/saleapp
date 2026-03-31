@@ -198,3 +198,129 @@ ON CONFLICT DO NOTHING;
 -- ===================
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO saleapp_user;
 -- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO saleapp_user;
+
+-- ===================
+-- Seed Data: Products
+-- ===================
+INSERT INTO products (sku, name, description, price, cost, stock, category_id) VALUES
+    ('ELEC-001', 'Wireless Mouse', 'Ergonomic wireless mouse with USB receiver', 29.99, 12.00, 45, (SELECT id FROM categories WHERE name = 'Electronics')),
+    ('ELEC-002', 'USB-C Hub 7-Port', 'Multi-port USB-C hub with HDMI output', 49.99, 22.00, 28, (SELECT id FROM categories WHERE name = 'Electronics')),
+    ('ELEC-003', 'Bluetooth Headset', 'Over-ear wireless headphones', 89.99, 45.00, 3, (SELECT id FROM categories WHERE name = 'Electronics')),
+    ('ELEC-004', 'Mechanical Keyboard', 'RGB backlit mechanical keyboard', 79.99, 38.00, 15, (SELECT id FROM categories WHERE name = 'Electronics')),
+    ('ELEC-005', 'Webcam 1080p', 'Full HD webcam with microphone', 59.99, 28.00, 22, (SELECT id FROM categories WHERE name = 'Electronics')),
+    ('CLTH-001', 'Cotton T-Shirt', 'Premium cotton casual t-shirt', 19.99, 6.00, 120, (SELECT id FROM categories WHERE name = 'Clothing')),
+    ('CLTH-002', 'Denim Jeans', 'Classic fit denim jeans', 49.99, 18.00, 65, (SELECT id FROM categories WHERE name = 'Clothing')),
+    ('CLTH-003', 'Hoodie', 'Warm fleece hoodie', 39.99, 14.00, 8, (SELECT id FROM categories WHERE name = 'Clothing')),
+    ('FOOD-001', 'Organic Coffee Beans 1kg', 'Premium roasted arabica beans', 24.99, 10.00, 55, (SELECT id FROM categories WHERE name = 'Food & Beverages')),
+    ('FOOD-002', 'Green Tea Box', '30 bags of organic green tea', 12.99, 4.00, 90, (SELECT id FROM categories WHERE name = 'Food & Beverages')),
+    ('HOME-001', 'LED Desk Lamp', 'Adjustable LED desk lamp with USB charging', 34.99, 15.00, 38, (SELECT id FROM categories WHERE name = 'Home & Garden')),
+    ('HOME-002', 'Plant Pot Set', 'Set of 3 ceramic plant pots', 29.99, 11.00, 5, (SELECT id FROM categories WHERE name = 'Home & Garden'))
+ON CONFLICT (sku) DO NOTHING;
+
+-- ===================
+-- Seed Data: Customers
+-- ===================
+INSERT INTO customers (email, phone, first_name, last_name, address) VALUES
+    ('sara.phet@example.com', '+66-81-234-5678', 'Sara', 'Phet', '123 Sukhumvit Rd, Bangkok'),
+    ('peeravit.nap@example.com', '+66-82-345-6789', 'Peeravit', 'Napawan', '456 Rama IV Rd, Bangkok'),
+    ('wijitra.tan@example.com', '+66-83-456-7890', 'Wijitra', 'Tanakul', '789 Silom Rd, Bangkok'),
+    ('chalida.rai@example.com', '+66-84-567-8901', 'Chalida', 'Raimaitre', '321 Ploenchit Rd, Bangkok'),
+    ('krittin.pet@example.com', '+66-85-678-9012', 'Krittin', 'Petcharat', '654 Sathorn Rd, Bangkok')
+ON CONFLICT (email) DO NOTHING;
+
+-- ===================
+-- Seed Data: Today's Orders (using CTE to capture inserted IDs)
+-- ===================
+DO $$
+DECLARE
+    admin_user_id UUID;
+BEGIN
+    SELECT id INTO admin_user_id FROM users WHERE email = 'admin@example.com' LIMIT 1;
+
+    -- Only seed orders if we have the admin user
+    IF admin_user_id IS NOT NULL THEN
+        -- Order 1: Completed - Electronics bundle
+        WITH ord1 AS (
+            INSERT INTO orders (order_number, customer_id, user_id, status, subtotal, tax, discount, total, payment_method, created_at)
+            SELECT
+                'ORD-2026-0301-001',
+                (SELECT id FROM customers WHERE email = 'sara.phet@example.com'),
+                admin_user_id,
+                'completed',
+                119.98,
+                8.40,
+                0.00,
+                128.38,
+                'cash',
+                CURRENT_TIMESTAMP - INTERVAL '4 hours'
+            WHERE (SELECT id FROM customers WHERE email = 'sara.phet@example.com') IS NOT NULL
+            RETURNING id
+        )
+        INSERT INTO order_items (order_id, product_id, quantity, unit_price, discount, total)
+        SELECT ord1.id, p.id, 2, 29.99, 0.00, 59.98
+        FROM ord1, (SELECT id FROM products WHERE sku = 'ELEC-001') p;
+
+        -- Order 2: Completed - Clothing
+        WITH ord2 AS (
+            INSERT INTO orders (order_number, customer_id, user_id, status, subtotal, tax, discount, total, payment_method, created_at)
+            SELECT
+                'ORD-2026-0301-002',
+                (SELECT id FROM customers WHERE email = 'peeravit.nap@example.com'),
+                admin_user_id,
+                'completed',
+                59.97,
+                4.20,
+                5.00,
+                59.17,
+                'qr_code',
+                CURRENT_TIMESTAMP - INTERVAL '3 hours'
+            WHERE (SELECT id FROM customers WHERE email = 'peeravit.nap@example.com') IS NOT NULL
+            RETURNING id
+        )
+        INSERT INTO order_items (order_id, product_id, quantity, unit_price, discount, total)
+        SELECT ord2.id, p.id, 3, 19.99, 5.00, 54.97
+        FROM ord2, (SELECT id FROM products WHERE sku = 'CLTH-001') p;
+
+        -- Order 3: Completed - Mixed items
+        WITH ord3 AS (
+            INSERT INTO orders (order_number, customer_id, user_id, status, subtotal, tax, discount, total, payment_method, created_at)
+            SELECT
+                'ORD-2026-0301-003',
+                (SELECT id FROM customers WHERE email = 'wijitra.tan@example.com'),
+                admin_user_id,
+                'completed',
+                89.98,
+                6.30,
+                0.00,
+                96.28,
+                'cash',
+                CURRENT_TIMESTAMP - INTERVAL '1 hour'
+            WHERE (SELECT id FROM customers WHERE email = 'wijitra.tan@example.com') IS NOT NULL
+            RETURNING id
+        )
+        INSERT INTO order_items (order_id, product_id, quantity, unit_price, discount, total)
+        SELECT ord3.id, p.id, 2, 19.99, 0.00, 39.98
+        FROM ord3, (SELECT id FROM products WHERE sku = 'CLTH-001') p;
+
+        -- Order 4: Pending (should not count in completed revenue)
+        WITH ord4 AS (
+            INSERT INTO orders (order_number, customer_id, user_id, status, subtotal, tax, discount, total, payment_method, created_at)
+            SELECT
+                'ORD-2026-0301-004',
+                (SELECT id FROM customers WHERE email = 'sara.phet@example.com'),
+                admin_user_id,
+                'pending',
+                29.99,
+                2.10,
+                0.00,
+                32.09,
+                'cash',
+                CURRENT_TIMESTAMP - INTERVAL '30 minutes'
+            WHERE (SELECT id FROM customers WHERE email = 'sara.phet@example.com') IS NOT NULL
+            RETURNING id
+        )
+        INSERT INTO order_items (order_id, product_id, quantity, unit_price, discount, total)
+        SELECT ord4.id, p.id, 1, 29.99, 0.00, 29.99
+        FROM ord4, (SELECT id FROM products WHERE sku = 'ELEC-001') p;
+    END IF;
+END $$;

@@ -37,5 +37,7 @@ export function useDashboard() {
       const response = await api.get<{ data: DashboardResponse }>("/reports/dashboard");
       return response.data;
     },
+    retry: 1,
+    staleTime: 30000,
   });
 }
