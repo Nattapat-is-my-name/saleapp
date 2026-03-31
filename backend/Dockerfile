@@ -22,7 +22,7 @@ FROM alpine:3.19
 WORKDIR /app
 
 # Install CA certificates for HTTPS calls
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates wget
 
 # Create non-root user
 RUN adduser -D -g '' appuser
