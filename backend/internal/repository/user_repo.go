@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"saleapp/internal/models"
 	"gorm.io/gorm"
+	"saleapp/internal/models"
 )
 
 type UserRepository interface {
@@ -34,7 +34,7 @@ func (r *userRepository) GetByID(id uuid.UUID) (*models.User, error) {
 	err := r.db.First(&user, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, gorm.ErrRecordNotFound
 		}
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (r *userRepository) GetByEmail(email string) (*models.User, error) {
 	err := r.db.First(&user, "email = ?", email).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, gorm.ErrRecordNotFound
 		}
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (r *userRepository) List(limit, offset int) ([]models.User, int64, error) {
 	var total int64
 
 	r.db.Model(&models.User{}).Count(&total)
-	
+
 	err := r.db.Limit(limit).Offset(offset).Order("created_at DESC").Find(&users).Error
 	if err != nil {
 		return nil, 0, err

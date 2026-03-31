@@ -104,7 +104,7 @@ func main() {
 	reportingService := service.NewReportingService(orderRepo, productRepo)
 
 	// Initialize handlers
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, jwtMiddleware)
 	productHandler := handler.NewProductHandler(productService)
 	customerHandler := handler.NewCustomerHandler(customerService)
 	orderHandler := handler.NewOrderHandler(orderService)

@@ -11,12 +11,14 @@ import (
 )
 
 type AuthHandler struct {
-	authService service.AuthService
+	authService   service.AuthService
+	jwtMiddleware *middleware.JWTMiddleware
 }
 
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
+func NewAuthHandler(authService service.AuthService, jwtMiddleware *middleware.JWTMiddleware) *AuthHandler {
 	return &AuthHandler{
-		authService: authService,
+		authService:   authService,
+		jwtMiddleware: jwtMiddleware,
 	}
 }
 
@@ -29,7 +31,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	_, token, err := h.authService.Login(req.Email, req.Password)
+	user, _, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, errors.ErrUnauthorized) {
 			pkgresponse.Unauthorized(c, "Invalid email or password")
@@ -39,7 +41,21 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	pkgresponse.Success(c, token)
+	token, expiresAt, err := h.jwtMiddleware.GenerateToken(user)
+	if err != nil {
+		pkgresponse.InternalError(c, "Failed to generate token")
+		return
+	}
+
+	pkgresponse.Success(c, gin.H{
+		"token":     token,
+		"expiresAt": expiresAt.Format("2006-01-02T15:04:05Z07:00"),
+		"user": gin.H{
+			"id":    user.ID,
+			"email": user.Email,
+			"role":  user.Role,
+		},
+	})
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {

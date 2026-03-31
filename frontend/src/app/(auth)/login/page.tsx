@@ -45,22 +45,24 @@ export default function LoginPage() {
 
     try {
       const response = await api.post<{
-        token: string;
-        expiresAt: string;
-        user: {
-          id: string;
-          email: string;
-          role: string;
+        data: {
+          token: string;
+          expiresAt: string;
+          user: {
+            id: string;
+            email: string;
+            role: string;
+          };
         };
       }>("/auth/login", data);
 
-      localStorage.setItem("auth_token", response.token);
+      localStorage.setItem("auth_token", response.data.token);
       localStorage.setItem(
         "auth_user",
         JSON.stringify({
-          id: response.user.id,
-          email: response.user.email,
-          role: response.user.role,
+          id: response.data.user.id,
+          email: response.data.user.email,
+          role: response.data.user.role,
         })
       );
 
