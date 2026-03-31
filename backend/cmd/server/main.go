@@ -124,7 +124,13 @@ func main() {
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
-		response.Success(c, gin.H{
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "healthy",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
+	router.HEAD("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
 			"status":    "healthy",
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
 		})
