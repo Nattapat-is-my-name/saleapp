@@ -56,7 +56,7 @@ services:
     container_name: saleapp-frontend
     restart: unless-stopped
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT:-8080}/api/v1
+      - NEXT_PUBLIC_API_URL=http://backend.saleapp.orb.local:${BACKEND_PORT:-8080}/api/v1
       - NODE_ENV=development
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
