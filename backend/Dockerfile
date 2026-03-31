@@ -31,7 +31,8 @@ RUN adduser -D -g '' appuser
 COPY --from=builder /app/saleapp-backend .
 
 # Copy environment file (should be overridden via env vars in production)
-COPY .env.example .env 2>/dev/null || true
+# Only copy if .env.example exists (use dummy to avoid build error if missing)
+RUN if [ -f .env.example ]; then cp .env.example .env; fi
 
 # Change ownership
 RUN chown -R appuser:appuser /app
