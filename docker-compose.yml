@@ -6,20 +6,22 @@ services:
     container_name: saleapp-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-saleapp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-saleapp_dev_password}
-      POSTGRES_DB: ${POSTGRES_DB:-saleapp}
+      POSTGRES_USER: saleapp
+      POSTGRES_PASSWORD: saleapp_dev_password
+      POSTGRES_DB: saleapp
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-saleapp}"]
+      test: ["CMD-SHELL", "pg_isready -U saleapp"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - saleapp-network
 
   backend:
     build:
@@ -30,13 +32,13 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=${POSTGRES_DB:-saleapp}
-      - DB_USER=${POSTGRES_USER:-saleapp}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-saleapp_dev_password}
+      - DB_NAME=saleapp
+      - DB_USER=saleapp
+      - DB_PASSWORD=saleapp_dev_password
       - DB_SSL_MODE=disable
       - GIN_MODE=debug
       - PORT=8080
-      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - LOG_LEVEL=debug
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:
@@ -48,6 +50,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    networks:
+      - saleapp-network
 
   frontend:
     build:
@@ -56,18 +60,20 @@ services:
     container_name: saleapp-frontend
     restart: unless-stopped
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend.saleapp.orb.local:${BACKEND_PORT:-8080}/api/v1
+      - NEXT_PUBLIC_API_URL=http://backend:8080/api/v1
       - NODE_ENV=development
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - saleapp-network
 
 volumes:
   postgres_data:
     driver: local
 
 networks:
-  default:
-    name: saleapp-network
+  saleapp-network:
+    driver: bridge
