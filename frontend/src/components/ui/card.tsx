@@ -1,103 +1,122 @@
-import * as React from "react"
+import * as React from "react";
+import CardMUI from "@mui/material/Card";
+import CardContentMUI from "@mui/material/CardContent";
+import CardActionsMUI from "@mui/material/CardActions";
 
-import { cn } from "@/lib/utils"
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+  size?: "default" | "sm";
+  [key: string]: unknown;
+}
 
-function Card({
+function Card({ children, className, size = "default", ...props }: CardProps) {
+  return (
+    <CardMUI
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: size === "sm" ? 1.5 : 2,
+        py: size === "sm" ? 1.5 : 2,
+        ...(className ? {} : {}),
+      }}
+      {...props}
+    >
+      {children}
+    </CardMUI>
+  );
+}
+
+function CardHeader({
+  children,
   className,
-  size = "default",
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<typeof CardMUI> & { className?: string }) {
   return (
-    <div
-      data-slot="card"
-      data-size={size}
-      className={cn(
-        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
-        className
-      )}
+    <CardContentMUI
+      sx={{
+        px: 2,
+        pt: 2,
+        pb: 1,
+        display: "grid",
+        gap: 0.5,
+        alignItems: "start",
+        "&:last-child": { pb: 1 },
+      }}
       {...props}
-    />
-  )
+    >
+      {children}
+    </CardContentMUI>
+  );
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { className?: string }) {
   return (
     <div
-      data-slot="card-header"
-      className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-4 group-data-[size=sm]/card:px-3 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3",
-        className
-      )}
+      style={{
+        fontSize: "1rem",
+        fontWeight: 600,
+        lineHeight: 1.4,
+      }}
       {...props}
-    />
-  )
+    >
+      {children}
+    </div>
+  );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardDescription({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { className?: string }) {
   return (
     <div
-      data-slot="card-title"
-      className={cn(
-        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
-        className
-      )}
+      style={{
+        fontSize: "0.875rem",
+        color: "#64748b",
+      }}
       {...props}
-    />
-  )
+    >
+      {children}
+    </div>
+  );
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+function CardContent({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof CardContentMUI> & { className?: string }) {
   return (
-    <div
-      data-slot="card-description"
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
-  )
+    <CardContentMUI sx={{ px: 2, pt: 0, pb: 2 }} {...props}>
+      {children}
+    </CardContentMUI>
+  );
 }
 
-function CardAction({ className, ...props }: React.ComponentProps<"div">) {
+function CardFooter({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof CardActionsMUI> & { className?: string }) {
   return (
-    <div
-      data-slot="card-action"
-      className={cn(
-        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className
-      )}
+    <CardActionsMUI
+      sx={{
+        px: 2,
+        py: 1.5,
+        borderTop: "1px solid #e2e8f0",
+        backgroundColor: "#f8fafc",
+      }}
       {...props}
-    />
-  )
+    >
+      {children}
+    </CardActionsMUI>
+  );
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-content"
-      className={cn("px-4 group-data-[size=sm]/card:px-3", className)}
-      {...props}
-    />
-  )
-}
-
-function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-footer"
-      className={cn(
-        "flex items-center rounded-b-xl border-t bg-muted/50 p-4 group-data-[size=sm]/card:p-3",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-}
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

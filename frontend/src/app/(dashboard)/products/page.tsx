@@ -2,19 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import Box from "@mui/material/Box";
+import Grid from "@mui/material/Grid";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import Stack from "@mui/material/Stack";
+import { Add, Search, Edit, Delete } from "@mui/icons-material";
+import Chip from "@mui/material/Chip";
 import { useProducts, useDeleteProduct } from "@/hooks/use-products";
 import { formatCurrency } from "@/lib/utils";
 import type { Product } from "@/types/product";
@@ -32,7 +31,6 @@ export default function ProductsPage() {
 
   const deleteProduct = useDeleteProduct();
 
-  // Debounce search
   const handleSearchChange = (value: string) => {
     setSearch(value);
     const timer = setTimeout(() => {
@@ -49,135 +47,184 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Products</h2>
-          <p className="text-muted-foreground">
+    <Box>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+            Products
+          </Typography>
+          <Typography sx={{ color: "#64748b" }}>
             Manage your product catalog
-          </p>
-        </div>
-        <Button>
-          <Link href="/products/new" className="flex items-center">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
-          </Link>
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          component={Link}
+          href="/products/new"
+        >
+          Add Product
         </Button>
-      </div>
+      </Box>
 
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <Box sx={{ p: 2 }}>
+          <TextField
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: "#64748b" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ width: 300 }}
+          />
+        </Box>
+        <Box sx={{ borderTop: "1px solid #e2e8f0" }}>
           {isLoading ? (
-            <div className="py-8 text-center text-muted-foreground">
+            <Box sx={{ py: 8, textAlign: "center", color: "#64748b" }}>
               Loading products...
-            </div>
+            </Box>
           ) : !data?.data.length ? (
-            <div className="py-8 text-center text-muted-foreground">
+            <Box sx={{ py: 8, textAlign: "center", color: "#64748b" }}>
               No products found. Create your first product to get started.
-            </div>
+            </Box>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.data.map((product: Product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">
-                        {product.sku}
-                      </TableCell>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>{formatCurrency(product.price)}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={product.stock < 10 ? "warning" : "secondary"}
-                        >
-                          {product.stock}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={product.isActive ? "success" : "secondary"}
-                        >
-                          {product.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon">
-                            <Link href={`/products/${product.id}`}>
-                              <Pencil className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(product.id)}
-                            disabled={deleteProduct.isPending}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {/* Table Header */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "100px 1fr 120px 100px 100px 140px",
+                  gap: 2,
+                  px: 2,
+                  py: 1.5,
+                  backgroundColor: "#f8fafc",
+                  borderBottom: "1px solid #e2e8f0",
+                }}
+              >
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  SKU
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Name
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Price
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Stock
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Status
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b", textAlign: "right" }}>
+                  Actions
+                </Typography>
+              </Box>
 
+              {/* Table Rows */}
+              {data.data.map((product: Product) => (
+                <Box
+                  key={product.id}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "100px 1fr 120px 100px 100px 140px",
+                    gap: 2,
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid #f1f5f9",
+                    alignItems: "center",
+                    "&:hover": { backgroundColor: "#f8fafc" },
+                    "&:last-child": { borderBottom: 0 },
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {product.sku}
+                  </Typography>
+                  <Typography variant="body2">{product.name}</Typography>
+                  <Typography variant="body2">{formatCurrency(product.price)}</Typography>
+                  <Box>
+                    <Chip
+                      label={product.stock}
+                      color={product.stock < 10 ? "warning" : "secondary"}
+                      size="small"
+                    />
+                  </Box>
+                  <Box>
+                    <Chip
+                      label={product.isActive ? "Active" : "Inactive"}
+                      color={product.isActive ? "success" : "secondary"}
+                      size="small"
+                    />
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      component={Link}
+                      href={`/products/${product.id}`}
+                      sx={{ color: "#64748b" }}
+                    >
+                      <Edit sx={{ fontSize: 18 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDelete(product.id)}
+                      disabled={deleteProduct.isPending}
+                      sx={{ color: "#dc2626" }}
+                    >
+                      <Delete sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                </Box>
+              ))}
+
+              {/* Pagination */}
               {data.meta && data.meta.totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    px: 2,
+                    py: 1.5,
+                    borderTop: "1px solid #e2e8f0",
+                  }}
+                >
+                  <Typography variant="body2" sx={{ color: "#64748b" }}>
                     Showing {(page - 1) * 20 + 1} to{" "}
-                    {Math.min(page * 20, data.meta.total)} of {data.meta.total}{" "}
-                    products
-                  </p>
-                  <div className="flex gap-2">
+                    {Math.min(page * 20, data.meta.total)} of {data.meta.total} products
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="outlined"
+                      size="small"
                       onClick={() => setPage(page - 1)}
                       disabled={page === 1}
                     >
                       Previous
                     </Button>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="outlined"
+                      size="small"
                       onClick={() => setPage(page + 1)}
                       disabled={page >= data.meta.totalPages}
                     >
                       Next
                     </Button>
-                  </div>
-                </div>
+                  </Stack>
+                </Box>
               )}
             </>
           )}
-        </CardContent>
+        </Box>
       </Card>
-    </div>
+    </Box>
   );
 }

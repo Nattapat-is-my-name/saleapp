@@ -1,26 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { usePathname, useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import Drawer from "@mui/material/Drawer";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
+import Typography from "@mui/material/Typography";
 import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  Users,
-  BarChart3,
+  Dashboard,
+  Inventory2,
+  ShoppingBag,
+  People,
+  BarChart,
   Settings,
-  LogOut,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+  Logout,
+} from "@mui/icons-material";
+import Button from "@mui/material/Button";
+
+const DRAWER_WIDTH = 260;
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Products", href: "/products", icon: Package },
-  { name: "Orders", href: "/orders", icon: ShoppingCart },
-  { name: "Customers", href: "/customers", icon: Users },
-  { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Dashboard", href: "/", icon: Dashboard },
+  { name: "Products", href: "/products", icon: Inventory2 },
+  { name: "Orders", href: "/orders", icon: ShoppingBag },
+  { name: "Customers", href: "/customers", icon: People },
+  { name: "Reports", href: "/reports", icon: BarChart },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -34,53 +43,111 @@ export function Sidebar() {
     router.push("/login");
   };
 
-  return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card">
-      <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-16 items-center border-b px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <ShoppingCart className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-xl">SaleApp</span>
-          </Link>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Logout */}
-        <div className="border-t p-3">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
-            onClick={handleLogout}
+  const drawerContent = (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Logo */}
+      <Box
+        sx={{
+          height: 64,
+          display: "flex",
+          alignItems: "center",
+          px: 2.5,
+          borderBottom: "1px solid #e2e8f0",
+        }}
+      >
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: "8px",
+              backgroundColor: "#3b82f6",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
-        </div>
-      </div>
-    </aside>
+            <ShoppingBag sx={{ color: "#fff", fontSize: 20 }} />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b" }}>
+            SaleApp
+          </Typography>
+        </Link>
+      </Box>
+
+      {/* Navigation */}
+      <List sx={{ flex: 1, px: 1, py: 2 }}>
+        {navigation.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <ListItem key={item.name} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                component={Link}
+                href={item.href}
+                sx={{
+                  borderRadius: "8px",
+                  py: 1,
+                  px: 1.5,
+                  backgroundColor: isActive ? "#3b82f6" : "transparent",
+                  color: isActive ? "#fff" : "#64748b",
+                  "&:hover": {
+                    backgroundColor: isActive ? "#2563eb" : "#f1f5f9",
+                    color: isActive ? "#fff" : "#1e293b",
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 36,
+                    color: "inherit",
+                  }}
+                >
+                  <item.icon sx={{ fontSize: 20 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.name}
+                  primaryTypographyProps={{ fontSize: "0.875rem", fontWeight: 500 }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+
+      {/* Logout */}
+      <Divider />
+      <Box sx={{ p: 1.5 }}>
+        <Button
+          variant="text"
+          onClick={handleLogout}
+          startIcon={<Logout sx={{ fontSize: 18 }} />}
+          sx={{
+            justifyContent: "flex-start",
+            color: "#64748b",
+            px: 1.5,
+            "&:hover": { color: "#dc2626", backgroundColor: "#fef2f2" },
+          }}
+        >
+          Sign out
+        </Button>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Drawer
+      variant="permanent"
+      sx={{
+        width: DRAWER_WIDTH,
+        flexShrink: 0,
+        "& .MuiDrawer-paper": {
+          width: DRAWER_WIDTH,
+          boxSizing: "border-box",
+          backgroundColor: "#fff",
+        },
+      }}
+    >
+      {drawerContent}
+    </Drawer>
   );
 }

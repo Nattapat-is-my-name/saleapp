@@ -2,27 +2,25 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Eye, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import Stack from "@mui/material/Stack";
+import Grid from "@mui/material/Grid";
+import Chip from "@mui/material/Chip";
+import { Add, Search, Visibility, Refresh } from "@mui/icons-material";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/use-orders";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import type { Order, OrderStatus } from "@/types/order";
 
-const statusColors: Record<OrderStatus, "default" | "success" | "warning" | "destructive"> = {
+const statusColors: Record<OrderStatus, "default" | "success" | "warning" | "error" | "info" | "secondary"> = {
   pending: "warning",
   completed: "success",
-  cancelled: "destructive",
+  cancelled: "error",
   refunded: "default",
 };
 
@@ -42,135 +40,186 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
-          <p className="text-muted-foreground">
+    <Box>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+            Orders
+          </Typography>
+          <Typography sx={{ color: "#64748b" }}>
             View and manage customer orders
-          </p>
-        </div>
-        <Button>
-          <Link href="/orders/new" className="flex items-center">
-            <Plus className="mr-2 h-4 w-4" />
-            New Order
-          </Link>
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          component={Link}
+          href="/orders/new"
+        >
+          New Order
         </Button>
-      </div>
+      </Box>
 
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search orders..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <Box sx={{ p: 2 }}>
+          <TextField
+            placeholder="Search orders..."
+            value={search}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: "#64748b" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ width: 300 }}
+          />
+        </Box>
+        <Box>
           {isLoading ? (
-            <div className="py-8 text-center text-muted-foreground">
+            <Box sx={{ py: 8, textAlign: "center", color: "#64748b" }}>
               Loading orders...
-            </div>
+            </Box>
           ) : !data?.data.length ? (
-            <div className="py-8 text-center text-muted-foreground">
+            <Box sx={{ py: 8, textAlign: "center", color: "#64748b" }}>
               No orders found. Create your first order to get started.
-            </div>
+            </Box>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order #</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.data.map((order: Order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        {order.orderNumber}
-                      </TableCell>
-                      <TableCell>
-                        {order.customer
-                          ? `${order.customer.firstName} ${order.customer.lastName}`
-                          : "Walk-in Customer"}
-                      </TableCell>
-                      <TableCell>{formatDateTime(order.createdAt)}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusColors[order.status]}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatCurrency(order.total)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link href={`/orders/${order.id}`}>
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">View</span>
-                            </Link>
-                          </Button>
-                          {order.status === "pending" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                handleStatusUpdate(order.id, "completed")
-                              }
-                              disabled={updateStatus.isPending}
-                            >
-                              <RefreshCw className="h-4 w-4" />
-                              <span className="sr-only">Complete</span>
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {/* Table Header */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "140px 1fr 180px 100px 120px 120px",
+                  gap: 2,
+                  px: 2,
+                  py: 1.5,
+                  backgroundColor: "#f8fafc",
+                  borderBottom: "1px solid #e2e8f0",
+                }}
+              >
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Order #
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Customer
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Date
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Status
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                  Total
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b", textAlign: "right" }}>
+                  Actions
+                </Typography>
+              </Box>
+
+              {/* Table Rows */}
+              {data.data.map((order: Order) => (
+                <Box
+                  key={order.id}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "140px 1fr 180px 100px 120px 120px",
+                    gap: 2,
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid #f1f5f9",
+                    alignItems: "center",
+                    "&:hover": { backgroundColor: "#f8fafc" },
+                    "&:last-child": { borderBottom: 0 },
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {order.orderNumber}
+                  </Typography>
+                  <Typography variant="body2">
+                    {order.customer
+                      ? `${order.customer.firstName} ${order.customer.lastName}`
+                      : "Walk-in Customer"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#64748b", fontSize: "0.8rem" }}>
+                    {formatDateTime(order.createdAt)}
+                  </Typography>
+                  <Box>
+                    <Chip
+                      label={order.status}
+                      color={statusColors[order.status]}
+                      size="small"
+                    />
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {formatCurrency(order.total)}
+                  </Typography>
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      component={Link}
+                      href={`/orders/${order.id}`}
+                      sx={{ color: "#64748b" }}
+                    >
+                      <Visibility sx={{ fontSize: 18 }} />
+                    </IconButton>
+                    {order.status === "pending" && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleStatusUpdate(order.id, "completed")}
+                        disabled={updateStatus.isPending}
+                        sx={{ color: "#10b981" }}
+                      >
+                        <Refresh sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    )}
+                  </Box>
+                </Box>
+              ))}
 
               {data.meta && data.meta.totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    px: 2,
+                    py: 1.5,
+                    borderTop: "1px solid #e2e8f0",
+                  }}
+                >
+                  <Typography variant="body2" sx={{ color: "#64748b" }}>
                     Showing {(page - 1) * 20 + 1} to{" "}
-                    {Math.min(page * 20, data.meta.total)} of {data.meta.total}{" "}
-                    orders
-                  </p>
-                  <div className="flex gap-2">
+                    {Math.min(page * 20, data.meta.total)} of {data.meta.total} orders
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="outlined"
+                      size="small"
                       onClick={() => setPage(page - 1)}
                       disabled={page === 1}
                     >
                       Previous
                     </Button>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="outlined"
+                      size="small"
                       onClick={() => setPage(page + 1)}
                       disabled={page >= data.meta.totalPages}
                     >
                       Next
                     </Button>
-                  </div>
-                </div>
+                  </Stack>
+                </Box>
               )}
             </>
           )}
-        </CardContent>
+        </Box>
       </Card>
-    </div>
+    </Box>
   );
 }

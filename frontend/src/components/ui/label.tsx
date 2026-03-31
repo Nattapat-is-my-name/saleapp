@@ -1,20 +1,28 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
+import FormLabelMUI from "@mui/material/FormLabel";
 
-import { cn } from "@/lib/utils"
-
-function Label({ className, ...props }: React.ComponentProps<"label">) {
-  return (
-    <label
-      data-slot="label"
-      className={cn(
-        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-        className
-      )}
-      {...props}
-    />
-  )
+interface LabelProps {
+  children?: React.ReactNode;
+  className?: string;
+  htmlFor?: string;
 }
 
-export { Label }
+export function Label({ children, className, htmlFor }: LabelProps) {
+  return (
+    <FormLabelMUI
+      htmlFor={htmlFor}
+      className={className}
+      sx={{
+        display: "block",
+        fontSize: "0.875rem",
+        fontWeight: 500,
+        color: "text.secondary",
+        mb: 0.5,
+      }}
+    >
+      {children}
+    </FormLabelMUI>
+  );
+}
