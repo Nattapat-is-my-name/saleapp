@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Elements } from '@stripe/react-stripe-js';
-import { Container, Typography, Paper, CircularProgress, Alert } from '@mui/material';
+import { Container, Typography, Paper, CircularProgress, Alert, Box } from '@mui/material';
 import { stripePromise } from '@/lib/stripe';
 import { usePayment } from '@/hooks/usePayment';
 import CheckoutForm from '@/components/payment/CheckoutForm';
 import { PaymentIntent } from '@/types/payment';
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('order_id');
   const { createPaymentIntent, loading, error } = usePayment();
@@ -82,5 +82,22 @@ export default function CheckoutPage() {
         </Elements>
       </Paper>
     </Container>
+  );
+}
+
+function CheckoutLoading() {
+  return (
+    <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+      <CircularProgress />
+      <Typography sx={{ mt: 2 }}>Loading checkout...</Typography>
+    </Container>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutLoading />}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

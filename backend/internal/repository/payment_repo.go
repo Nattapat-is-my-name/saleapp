@@ -12,6 +12,8 @@ type PaymentRepository interface {
 	GetByStripeID(stripeID string) (*models.Payment, error)
 	UpdateStatusByStripeID(stripeID string, status models.PaymentStatus) error
 	UpdateStatus(orderID string, status models.PaymentStatus) error
+	IsEventProcessed(eventID string) (bool, error)
+	MarkEventProcessed(eventID string) error
 }
 
 type paymentRepository struct {
@@ -62,4 +64,14 @@ func (r *paymentRepository) UpdateStatus(orderID string, status models.PaymentSt
 	return r.db.Model(&models.Payment{}).
 		Where("order_id = ?", orderUUID).
 		Update("status", status).Error
+}
+
+func (r *paymentRepository) IsEventProcessed(eventID string) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.ProcessedEvent{}).Where("event_id = ?", eventID).Count(&count).Error
+	return count > 0, err
+}
+
+func (r *paymentRepository) MarkEventProcessed(eventID string) error {
+	return r.db.Create(&models.ProcessedEvent{EventID: eventID}).Error
 }

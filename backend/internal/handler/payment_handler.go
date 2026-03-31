@@ -1,14 +1,16 @@
 package handler
 
 import (
+	"io"
+	"log"
 	"net/http"
+	"os"
 
-	"saleapp/internal/dto/request"
 	"saleapp/internal/service"
 	"saleapp/pkg/response"
 
 	"github.com/gin-gonic/gin"
-	stripe "github.com/stripe/stripe-go/v76"
+	"github.com/stripe/stripe-go/v76/webhook"
 )
 
 type PaymentHandler struct {
@@ -20,7 +22,10 @@ func NewPaymentHandler(paymentService *service.PaymentService) *PaymentHandler {
 }
 
 func (h *PaymentHandler) CreatePaymentIntent(c *gin.Context) {
-	var req request.CreatePaymentIntentRequest
+	var req struct {
+		OrderID  string `json:"order_id" binding:"required"`
+		Currency string `json:"currency"`
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request: "+err.Error())
 		return
@@ -40,19 +45,53 @@ func (h *PaymentHandler) CreatePaymentIntent(c *gin.Context) {
 	})
 }
 
+// HandleWebhook handles incoming Stripe webhook events.
+// It verifies the signature, checks for duplicates, and returns 200 immediately
+// before processing the event asynchronously.
 func (h *PaymentHandler) HandleWebhook(c *gin.Context) {
-	var event stripe.Event
-	if err := c.ShouldBindJSON(&event); err != nil {
-		response.Error(c, http.StatusBadRequest, "WEBHOOK_ERROR", "Webhook error: "+err.Error())
+	// 1. Read raw body — required for Stripe signature verification
+	payload, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		log.Printf("Failed to read webhook body: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Can't read body"})
 		return
 	}
 
-	if err := h.paymentService.HandleWebhook(&event); err != nil {
-		response.Error(c, http.StatusInternalServerError, "WEBHOOK_PROCESSING_ERROR", "Webhook processing error")
+	// 2. Verify Stripe signature
+	sigHeader := c.GetHeader("Stripe-Signature")
+	webhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
+	if webhookSecret == "" {
+		log.Println("WARNING: STRIPE_WEBHOOK_SECRET not set, using test mode")
+		webhookSecret = "whsec_test_placeholder"
+	}
+
+	event, err := webhook.ConstructEvent(payload, sigHeader, webhookSecret)
+	if err != nil {
+		// Signature verification failed — log and return 400
+		// Stripe will NOT retry events with invalid signatures
+		log.Printf("Webhook signature verification failed: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid signature"})
 		return
 	}
 
-	response.Success(c, gin.H{"received": true})
+	// 3. Idempotency check — skip already-processed events
+	processed, err := h.paymentService.IsEventProcessed(event.ID)
+	if err != nil {
+		// DB error — log but still return 200 to avoid Stripe retry storms
+		// The event may or may not have been processed; we'll find out on retry
+		log.Printf("DB error checking event %s: %v", event.ID, err)
+	}
+	if processed {
+		log.Printf("Event %s already processed, skipping", event.ID)
+		c.JSON(http.StatusOK, gin.H{"received": true})
+		return
+	}
+
+	// 4. Return 200 immediately, process async
+	// Stripe expects a 200 response within ~30 seconds
+	go h.paymentService.HandleWebhookAsync(event)
+
+	c.JSON(http.StatusOK, gin.H{"received": true})
 }
 
 func (h *PaymentHandler) GetPaymentStatus(c *gin.Context) {

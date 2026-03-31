@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Container, Typography, Box, Button, Paper } from '@mui/material';
+import { Container, Typography, Box, Button, Paper, CircularProgress } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Link from 'next/link';
 
-export default function CheckoutSuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
   const paymentIntent = searchParams.get('payment_intent');
   const orderId = searchParams.get('order_id');
@@ -37,7 +37,7 @@ export default function CheckoutSuccessPage() {
           <Button 
             variant="contained" 
             component={Link} 
-            href="/dashboard"
+            href="/"
             sx={{ mr: 2 }}
           >
             Go to Dashboard
@@ -48,5 +48,21 @@ export default function CheckoutSuccessPage() {
         </Box>
       </Paper>
     </Container>
+  );
+}
+
+function Loading() {
+  return (
+    <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+      <CircularProgress />
+    </Container>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <SuccessContent />
+    </Suspense>
   );
 }

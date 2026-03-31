@@ -272,6 +272,7 @@ func initDatabase(cfg *config.Config, zlog *zerolog.Logger) (*gorm.DB, error) {
 		&models.Order{},
 		&models.OrderItem{},
 		&models.Payment{},
+		&models.ProcessedEvent{},
 	); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
