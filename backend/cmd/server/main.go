@@ -62,6 +62,26 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Override database config from env vars (for Docker)
+	if host := os.Getenv("DB_HOST"); host != "" {
+		cfg.Database.Host = host
+	}
+	if port := os.Getenv("DB_PORT"); port != "" {
+		cfg.Database.Port = port
+	}
+	if name := os.Getenv("DB_NAME"); name != "" {
+		cfg.Database.Name = name
+	}
+	if user := os.Getenv("DB_USER"); user != "" {
+		cfg.Database.User = user
+	}
+	if password := os.Getenv("DB_PASSWORD"); password != "" {
+		cfg.Database.Password = password
+	}
+	if sslmode := os.Getenv("DB_SSL_MODE"); sslmode != "" {
+		cfg.Database.SSLMode = sslmode
+	}
+
 	// Initialize database
 	db, err := initDatabase(cfg, &zlog)
 	if err != nil {
