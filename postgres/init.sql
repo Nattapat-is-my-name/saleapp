@@ -177,7 +177,7 @@ CREATE TRIGGER update_orders_updated_at
 INSERT INTO users (email, password_hash, first_name, last_name, role)
 VALUES (
     'admin@example.com',
-    '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4pWGD5eOYkTql/TO',  -- admin123
+    '$2a$12$.yJ9tv7gNHL8XVDuiEgRuOjVAdBTMaY3wzY1YXI3IQrhv/Og5NEaO',  -- admin123
     'System',
     'Admin',
     'admin'
