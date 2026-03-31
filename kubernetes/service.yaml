@@ -1,0 +1,59 @@
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: saleapp-backend
+  labels:
+    app: saleapp
+    component: backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: saleapp
+    component: backend
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: saleapp-frontend
+  labels:
+    app: saleapp
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app: saleapp
+    component: frontend
+
+---
+# PostgreSQL Service (for development/staging only - use managed DB in production)
+apiVersion: v1
+kind: Service
+metadata:
+  name: saleapp-postgres
+  labels:
+    app: saleapp
+    component: database
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgres
+  selector:
+    app: saleapp
+    component: database

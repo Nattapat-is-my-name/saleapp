@@ -1,0 +1,72 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: saleapp-ingress
+  labels:
+    app: saleapp
+  annotations:
+    # AWS ALB ingress controller annotation (example)
+    # kubernetes.io/ingress.class: alb
+    # alb.ingress.kubernetes.io/scheme: internet-facing
+    
+    # Nginx ingress controller annotations
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    
+    # Let's Encrypt annotation (cert-manager)
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    
+    # General annotations
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  rules:
+    - host: saleapp.example.com
+      http:
+        paths:
+          # Frontend routes
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: saleapp-frontend
+                port:
+                  number: 3000
+          
+          # Backend API routes
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: saleapp-backend
+                port:
+                  number: 8080
+  # TLS configuration (uncomment when using cert-manager)
+  # tls:
+  #   - hosts:
+  #       - saleapp.example.com
+  #     secretName: saleapp-tls
+
+---
+# Health check ingress (for load balancer health probes)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: saleapp-health-ingress
+  labels:
+    app: saleapp
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+spec:
+  rules:
+    - host: saleapp.example.com
+      http:
+        paths:
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: saleapp-backend
+                port:
+                  number: 8080

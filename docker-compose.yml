@@ -13,11 +13,13 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-saleapp}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   backend:
     build:
@@ -46,20 +48,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: development
     container_name: saleapp-frontend
     restart: unless-stopped
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT:-8080}
+      - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT:-8080}/api/v1
       - NODE_ENV=development
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
 
 volumes:
   postgres_data:
