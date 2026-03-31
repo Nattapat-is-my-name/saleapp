@@ -17,7 +17,6 @@ import (
 	"saleapp/internal/models"
 	"saleapp/internal/repository"
 	"saleapp/internal/service"
-	"saleapp/pkg/response"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
