@@ -28,7 +28,12 @@ services:
     container_name: saleapp-backend
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER:-saleapp}:${POSTGRES_PASSWORD:-saleapp_dev_password}@postgres:5432/${POSTGRES_DB:-saleapp}?sslmode=disable
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-saleapp}
+      - DB_USER=${POSTGRES_USER:-saleapp}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-saleapp_dev_password}
+      - DB_SSL_MODE=disable
       - GIN_MODE=debug
       - PORT=8080
       - LOG_LEVEL=${LOG_LEVEL:-debug}
