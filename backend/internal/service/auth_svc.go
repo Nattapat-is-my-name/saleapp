@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"saleapp/internal/models"
 	"saleapp/internal/repository"
 	appErrors "saleapp/pkg/errors"
@@ -12,7 +11,7 @@ import (
 
 type AuthService interface {
 	Login(email, password string) (*models.User, string, error)
-	Register(user *models.User, password string) error
+	Register(user *models.User, password string) (*models.User, error)
 	GetUserByID(id uuid.UUID) (*models.User, error)
 	ChangePassword(userID uuid.UUID, oldPassword, newPassword string) error
 }
@@ -45,25 +44,27 @@ func (s *authService) Login(email, password string) (*models.User, string, error
 	return user, "", nil
 }
 
-func (s *authService) Register(user *models.User, password string) error {
+func (s *authService) Register(user *models.User, password string) (*models.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return appErrors.Wrap(err, "INTERNAL_ERROR", "Failed to hash password")
+		return nil, appErrors.Wrap(err, "INTERNAL_ERROR", "Failed to hash password")
 	}
 
 	user.PasswordHash = string(hashedPassword)
-	user.Role = models.RoleCashier
+	if user.Role == "" {
+		user.Role = models.RoleCashier
+	}
 	user.IsActive = true
 
 	err = s.userRepo.Create(user)
 	if err != nil {
 		if appErrors.Is(err, appErrors.ErrDuplicateEntry) {
-			return appErrors.New("CONFLICT", "Email already exists")
+			return nil, appErrors.New("CONFLICT", "Email already exists")
 		}
-		return err
+		return nil, err
 	}
 
-	return nil
+	return user, nil
 }
 
 func (s *authService) GetUserByID(id uuid.UUID) (*models.User, error) {

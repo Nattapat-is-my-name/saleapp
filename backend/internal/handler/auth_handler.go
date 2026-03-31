@@ -3,8 +3,8 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"saleapp/internal/dto/request"
-	"saleapp/internal/dto/response"
 	"saleapp/internal/middleware"
+	"saleapp/internal/models"
 	"saleapp/internal/service"
 	"saleapp/pkg/errors"
 	pkgresponse "saleapp/pkg/response"
@@ -23,13 +23,13 @@ func NewAuthHandler(authService service.AuthService) *AuthHandler {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req request.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "body", Message: err.Error()},
 		})
 		return
 	}
 
-	tokenResp, err := h.authService.Login(&req)
+	_, token, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, errors.ErrUnauthorized) {
 			pkgresponse.Unauthorized(c, "Invalid email or password")
@@ -39,19 +39,24 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	pkgresponse.Success(c, tokenResp)
+	pkgresponse.Success(c, token)
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req request.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "body", Message: err.Error()},
 		})
 		return
 	}
 
-	user, err := h.authService.Register(&req)
+	user, err := h.authService.Register(&models.User{
+		Email:     req.Email,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Role:      models.UserRole(req.Role),
+	}, req.Password)
 	if err != nil {
 		if errors.Is(err, errors.ErrDuplicateEntry) {
 			pkgresponse.Conflict(c, "Email already registered")

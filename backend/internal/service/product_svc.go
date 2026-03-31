@@ -3,7 +3,6 @@ package service
 import (
 	"github.com/google/uuid"
 	"saleapp/internal/dto/request"
-	"saleapp/internal/dto/response"
 	"saleapp/internal/models"
 	"saleapp/internal/repository"
 	"saleapp/pkg/errors"

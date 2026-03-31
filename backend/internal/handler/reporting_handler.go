@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"saleapp/internal/dto/response"
 	"saleapp/internal/service"
 	pkgresponse "saleapp/pkg/response"
 )
@@ -33,7 +32,7 @@ func (h *ReportingHandler) GetSalesSummary(c *gin.Context) {
 
 	startDate, err := time.Parse("2006-01-02", startDateStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "start_date", Message: "Invalid date format (use YYYY-MM-DD)"},
 		})
 		return
@@ -41,7 +40,7 @@ func (h *ReportingHandler) GetSalesSummary(c *gin.Context) {
 
 	endDate, err := time.Parse("2006-01-02", endDateStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "end_date", Message: "Invalid date format (use YYYY-MM-DD)"},
 		})
 		return
@@ -79,7 +78,7 @@ func (h *ReportingHandler) GetTopSellingProducts(c *gin.Context) {
 
 	startDate, err := time.Parse("2006-01-02", startDateStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "start_date", Message: "Invalid date format (use YYYY-MM-DD)"},
 		})
 		return
@@ -87,7 +86,7 @@ func (h *ReportingHandler) GetTopSellingProducts(c *gin.Context) {
 
 	endDate, err := time.Parse("2006-01-02", endDateStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "end_date", Message: "Invalid date format (use YYYY-MM-DD)"},
 		})
 		return

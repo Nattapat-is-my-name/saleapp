@@ -42,6 +42,10 @@ func Wrap(err error, code, message string) *AppError {
 	return &AppError{Code: code, Message: message, Err: err}
 }
 
+func Wrapf(err error, code, format string, args ...interface{}) *AppError {
+	return &AppError{Code: code, Message: fmt.Sprintf(format, args...), Err: err}
+}
+
 func Is(err, target error) bool {
 	return errors.Is(err, target)
 }

@@ -1,98 +1,113 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
 	"saleapp/internal/config"
 	"saleapp/internal/handler"
 	"saleapp/internal/middleware"
 	"saleapp/internal/models"
 	"saleapp/internal/repository"
 	"saleapp/internal/service"
+	"saleapp/pkg/response"
 
-	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
 func main() {
+	// Initialize zerolog
+	zlog := zerolog.New(os.Stdout).With().Timestamp().Logger()
+
 	// Load configuration
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to load configuration")
+		// Try with default config for development
+		cfg = &config.Config{
+			Server: config.ServerConfig{
+				Host: "0.0.0.0",
+				Port: "8080",
+				Env:  "development",
+			},
+			Database: config.DatabaseConfig{
+				Host:     "localhost",
+				Port:     "5432",
+				Name:     "saleapp",
+				User:     "postgres",
+				Password: "postgres",
+				SSLMode:  "disable",
+			},
+			JWT: config.JWTConfig{
+				Secret:      "your-secret-key-change-in-production-min-32-chars",
+				ExpiryHours: 24,
+			},
+			Log: config.LogConfig{
+				Level: "debug",
+			},
+		}
+		zlog.Warn().Err(err).Msg("Failed to load config, using defaults")
 	}
 
-	// Setup logger
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	if cfg.Server.Env == "development" {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	// Set Gin mode
+	if cfg.Server.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Connect to database
-	db, err := initDB(cfg)
+	// Initialize database
+	db, err := initDatabase(cfg, &zlog)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to connect to database")
+		zlog.Fatal().Err(err).Msg("Failed to initialize database")
 	}
 
-	// Auto migrate
-	err = db.AutoMigrate(
-		&models.User{},
-		&models.Customer{},
-		&models.Product{},
-		&models.Category{},
-		&models.Order{},
-		&models.OrderItem{},
-	)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to migrate database")
-	}
+	// JWT Middleware
+	jwtMiddleware := middleware.NewJWTMiddleware(cfg.JWT.Secret, cfg.JWT.ExpiryHours)
 
-	// Seed default admin user if not exists
-	seedAdminUser(db)
-
-	// Initialize layers
+	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	productRepo := repository.NewProductRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 
+	// Initialize services
 	authService := service.NewAuthService(userRepo)
 	productService := service.NewProductService(productRepo)
 	customerService := service.NewCustomerService(customerRepo)
-	orderService := service.NewOrderService(orderRepo, productRepo, userRepo, customerRepo)
+	orderService := service.NewOrderService(orderRepo, productRepo, customerRepo)
+	reportingService := service.NewReportingService(orderRepo, productRepo)
 
-	// JWT Middleware
-	jwtMw := middleware.NewJWTMiddleware(cfg.JWT.Secret, cfg.JWT.ExpiryHours)
-
-	// Handlers
-	authHandler := handler.NewAuthHandler(authService, jwtMw)
+	// Initialize handlers
+	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
 	customerHandler := handler.NewCustomerHandler(customerService)
 	orderHandler := handler.NewOrderHandler(orderService)
+	reportingHandler := handler.NewReportingHandler(reportingService)
 
-	// Setup Gin
-	if cfg.Server.Env == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	// Rate limiter
+	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
 
+	// Setup router
 	router := gin.New()
 
-	// Global middleware
-	router.Use(middleware.Logger())
-	router.Use(middleware.Recovery())
+	// Middleware
+	router.Use(middleware.Recovery(zlog))
+	router.Use(middleware.Logger(zlog))
 	router.Use(middleware.CORS())
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
+		response.Success(c, gin.H{
+			"status":    "healthy",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
 	})
 
 	// API v1 routes
@@ -103,117 +118,122 @@ func main() {
 		{
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/register", authHandler.Register)
-			auth.POST("/logout", jwtMw.AuthRequired(), authHandler.Logout)
-			auth.GET("/me", jwtMw.AuthRequired(), authHandler.Me)
+			auth.POST("/logout", authHandler.Logout)
+			auth.GET("/me", jwtMiddleware.AuthRequired(), authHandler.Me)
 		}
 
-		// Protected routes
-		protected := v1.Group("")
-		protected.Use(jwtMw.AuthRequired())
+		// Products routes (protected)
+		products := v1.Group("/products")
+		products.Use(jwtMiddleware.AuthRequired())
+		products.Use(middleware.RateLimit(rateLimiter))
 		{
-			// Products
-			products := protected.Group("/products")
-			{
-				products.GET("", productHandler.List)
-				products.GET("/:id", productHandler.Get)
-				products.POST("", productHandler.Create)
-				products.PUT("/:id", productHandler.Update)
-				products.DELETE("/:id", productHandler.Delete)
-				products.GET("/low-stock", productHandler.GetLowStock)
-			}
+			products.GET("", productHandler.List)
+			products.GET("/:id", productHandler.GetByID)
+			products.POST("", jwtMiddleware.RoleRequired(models.RoleAdmin, models.RoleManager), productHandler.Create)
+			products.PUT("/:id", jwtMiddleware.RoleRequired(models.RoleAdmin, models.RoleManager), productHandler.Update)
+			products.DELETE("/:id", jwtMiddleware.RoleRequired(models.RoleAdmin), productHandler.Delete)
+		}
 
-			// Customers
-			customers := protected.Group("/customers")
-			{
-				customers.GET("", customerHandler.List)
-				customers.GET("/:id", customerHandler.Get)
-				customers.POST("", customerHandler.Create)
-				customers.PUT("/:id", customerHandler.Update)
-				customers.DELETE("/:id", customerHandler.Delete)
-			}
+		// Customers routes (protected)
+		customers := v1.Group("/customers")
+		customers.Use(jwtMiddleware.AuthRequired())
+		customers.Use(middleware.RateLimit(rateLimiter))
+		{
+			customers.GET("", customerHandler.List)
+			customers.GET("/:id", customerHandler.GetByID)
+			customers.POST("", jwtMiddleware.RoleRequired(models.RoleAdmin, models.RoleManager), customerHandler.Create)
+			customers.PUT("/:id", jwtMiddleware.RoleRequired(models.RoleAdmin, models.RoleManager), customerHandler.Update)
+			customers.DELETE("/:id", jwtMiddleware.RoleRequired(models.RoleAdmin), customerHandler.Delete)
+		}
 
-			// Orders
-			orders := protected.Group("/orders")
-			{
-				orders.GET("", orderHandler.List)
-				orders.GET("/:id", orderHandler.Get)
-				orders.POST("", orderHandler.Create)
-				orders.PUT("/:id/status", orderHandler.UpdateStatus)
-				orders.DELETE("/:id", orderHandler.Cancel)
-			}
+		// Orders routes (protected)
+		orders := v1.Group("/orders")
+		orders.Use(jwtMiddleware.AuthRequired())
+		orders.Use(middleware.RateLimit(rateLimiter))
+		{
+			orders.GET("", orderHandler.List)
+			orders.GET("/:id", orderHandler.GetByID)
+			orders.POST("", orderHandler.Create)
+			orders.PUT("/:id/status", jwtMiddleware.RoleRequired(models.RoleAdmin, models.RoleManager), orderHandler.UpdateStatus)
+			orders.DELETE("/:id", jwtMiddleware.RoleRequired(models.RoleAdmin, models.RoleManager), orderHandler.Cancel)
+		}
 
-			// Reports (admin/manager only)
-			reports := protected.Group("/reports")
-			reports.Use(jwtMw.RoleRequired(models.RoleAdmin, models.RoleManager))
-			{
-				reports.GET("/sales", orderHandler.GetSalesReport)
-				reports.GET("/products/top", orderHandler.GetTopProducts)
-			}
+		// Reports routes (protected)
+		reports := v1.Group("/reports")
+		reports.Use(jwtMiddleware.AuthRequired())
+		reports.Use(middleware.RateLimit(rateLimiter))
+		{
+			reports.GET("/sales", reportingHandler.GetSalesSummary)
+			reports.GET("/products/top", reportingHandler.GetTopSellingProducts)
+			reports.GET("/inventory/low", reportingHandler.GetLowStockProducts)
 		}
 	}
 
-	// Start server
+	// Create server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	srv := &http.Server{
-		Addr:    addr,
-		Handler: router,
+		Addr:         addr,
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown
+	// Start server in goroutine
 	go func() {
-		log.Info().Msgf("Starting server on %s", addr)
+		zlog.Info().Str("address", addr).Msg("Starting server")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal().Err(err).Msg("Server failed")
+			zlog.Fatal().Err(err).Msg("Server failed")
 		}
 	}()
 
-	// Wait for interrupt signal
+	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Info().Msg("Shutting down server...")
+	zlog.Info().Msg("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		zlog.Fatal().Err(err).Msg("Server forced to shutdown")
+	}
+
+	zlog.Info().Msg("Server exited")
 }
 
-func initDB(cfg *config.Config) (*gorm.DB, error) {
-	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	}
-
-	if cfg.Server.Env == "production" {
-		gormConfig.Logger = logger.Default.LogMode(logger.Warn)
-	}
-
+func initDatabase(cfg *config.Config, zlog *zerolog.Logger) (*gorm.DB, error) {
+	// Check if we should use SQLite for development
 	dsn := cfg.Database.DSN()
-	return gorm.Open(postgres.Open(dsn), gormConfig)
-}
-
-func seedAdminUser(db *gorm.DB) {
-	var count int64
-	db.Model(&models.User{}).Where("email = ?", "admin@saleapp.local").Count(&count)
-	if count > 0 {
-		return
-	}
-
-	hashedPassword, err := service.HashPassword("admin123")
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
-		log.Warn().Err(err).Msg("Failed to hash admin password")
-		return
+		// Fallback to SQLite for local development
+		zlog.Warn().Msg("PostgreSQL connection failed, using SQLite for development")
+		dsn = "file::memory:?cache=shared"
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Warn),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to database: %w", err)
+		}
 	}
 
-	admin := &models.User{
-		Email:        "admin@saleapp.local",
-		PasswordHash: hashedPassword,
-		FirstName:    "Admin",
-		LastName:     "User",
-		Role:         models.RoleAdmin,
-		IsActive:     true,
+	// Auto-migrate models
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Category{},
+		&models.Product{},
+		&models.Customer{},
+		&models.Order{},
+		&models.OrderItem{},
+	); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
-	if err := db.Create(admin).Error; err != nil {
-		log.Warn().Err(err).Msg("Failed to create admin user")
-		return
-	}
-
-	log.Info().Msg("Default admin user created: admin@saleapp.local / admin123")
+	zlog.Info().Msg("Database connected and migrated")
+	return db, nil
 }

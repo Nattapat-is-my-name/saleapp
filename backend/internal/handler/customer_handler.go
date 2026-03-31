@@ -25,7 +25,7 @@ func NewCustomerHandler(customerService service.CustomerService) *CustomerHandle
 func (h *CustomerHandler) List(c *gin.Context) {
 	var req request.ListCustomersRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "query", Message: err.Error()},
 		})
 		return
@@ -52,7 +52,7 @@ func (h *CustomerHandler) List(c *gin.Context) {
 		customerResponses[i] = *response.NewCustomerResponse(&cu)
 	}
 
-	pkgresponse.SuccessWithMeta(c, gin.H{"customers": customerResponses}, &response.Meta{
+	pkgresponse.SuccessWithMeta(c, gin.H{"customers": customerResponses}, &pkgresponse.Meta{
 		Page:       page,
 		Limit:      limit,
 		Total:      int(total),
@@ -64,7 +64,7 @@ func (h *CustomerHandler) GetByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid customer ID"},
 		})
 		return
@@ -86,7 +86,7 @@ func (h *CustomerHandler) GetByID(c *gin.Context) {
 func (h *CustomerHandler) Create(c *gin.Context) {
 	var req request.CreateCustomerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "body", Message: err.Error()},
 		})
 		return
@@ -109,7 +109,7 @@ func (h *CustomerHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid customer ID"},
 		})
 		return
@@ -117,7 +117,7 @@ func (h *CustomerHandler) Update(c *gin.Context) {
 
 	var req request.UpdateCustomerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "body", Message: err.Error()},
 		})
 		return
@@ -144,7 +144,7 @@ func (h *CustomerHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid customer ID"},
 		})
 		return

@@ -26,7 +26,7 @@ func NewProductHandler(productService service.ProductService) *ProductHandler {
 func (h *ProductHandler) List(c *gin.Context) {
 	var req request.ListProductsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "query", Message: err.Error()},
 		})
 		return
@@ -53,7 +53,7 @@ func (h *ProductHandler) List(c *gin.Context) {
 		productResponses[i] = *response.NewProductResponse(&p)
 	}
 
-	pkgresponse.SuccessWithMeta(c, gin.H{"products": productResponses}, &response.Meta{
+	pkgresponse.SuccessWithMeta(c, gin.H{"products": productResponses}, &pkgresponse.Meta{
 		Page:       page,
 		Limit:      limit,
 		Total:      int(total),
@@ -65,7 +65,7 @@ func (h *ProductHandler) GetByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid product ID"},
 		})
 		return
@@ -87,7 +87,7 @@ func (h *ProductHandler) GetByID(c *gin.Context) {
 func (h *ProductHandler) Create(c *gin.Context) {
 	var req request.CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "body", Message: err.Error()},
 		})
 		return
@@ -110,7 +110,7 @@ func (h *ProductHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid product ID"},
 		})
 		return
@@ -118,7 +118,7 @@ func (h *ProductHandler) Update(c *gin.Context) {
 
 	var req request.UpdateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "body", Message: err.Error()},
 		})
 		return
@@ -145,7 +145,7 @@ func (h *ProductHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid product ID"},
 		})
 		return

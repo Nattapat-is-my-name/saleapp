@@ -27,7 +27,7 @@ func NewOrderHandler(orderService service.OrderService) *OrderHandler {
 func (h *OrderHandler) List(c *gin.Context) {
 	var req request.ListOrdersRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "query", Message: err.Error()},
 		})
 		return
@@ -54,7 +54,7 @@ func (h *OrderHandler) List(c *gin.Context) {
 		orderResponses[i] = *response.NewOrderResponse(&o)
 	}
 
-	pkgresponse.SuccessWithMeta(c, gin.H{"orders": orderResponses}, &response.Meta{
+	pkgresponse.SuccessWithMeta(c, gin.H{"orders": orderResponses}, &pkgresponse.Meta{
 		Page:       page,
 		Limit:      limit,
 		Total:      int(total),
@@ -66,7 +66,7 @@ func (h *OrderHandler) GetByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid order ID"},
 		})
 		return
@@ -94,7 +94,7 @@ func (h *OrderHandler) Create(c *gin.Context) {
 
 	var req request.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "body", Message: err.Error()},
 		})
 		return
@@ -125,7 +125,7 @@ func (h *OrderHandler) UpdateStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid order ID"},
 		})
 		return
@@ -133,7 +133,7 @@ func (h *OrderHandler) UpdateStatus(c *gin.Context) {
 
 	var req request.UpdateOrderStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "body", Message: err.Error()},
 		})
 		return
@@ -160,7 +160,7 @@ func (h *OrderHandler) Cancel(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		pkgresponse.ValidationError(c, []response.FieldError{
+		pkgresponse.ValidationError(c, []pkgresponse.FieldError{
 			{Field: "id", Message: "Invalid order ID"},
 		})
 		return

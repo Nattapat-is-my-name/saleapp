@@ -44,7 +44,7 @@ func (s *reportingService) GetSalesSummary(startDate, endDate time.Time) (*respo
 
 	var avgOrder decimal.Decimal
 	if totalOrders > 0 {
-		avgOrder = totalRevenue.Div(response.Decimal(totalOrders))
+		avgOrder = totalRevenue.Div(decimal.NewFromInt(totalOrders))
 	}
 
 	return &response.SalesSummaryResponse{
