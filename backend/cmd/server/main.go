@@ -166,6 +166,7 @@ func main() {
 			reports.GET("/sales", reportingHandler.GetSalesSummary)
 			reports.GET("/products/top", reportingHandler.GetTopSellingProducts)
 			reports.GET("/inventory/low", reportingHandler.GetLowStockProducts)
+			reports.GET("/dashboard", reportingHandler.GetDashboard)
 		}
 	}
 

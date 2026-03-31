@@ -117,3 +117,13 @@ func (h *ReportingHandler) GetLowStockProducts(c *gin.Context) {
 
 	pkgresponse.Success(c, lowStock)
 }
+
+func (h *ReportingHandler) GetDashboard(c *gin.Context) {
+	dashboard, err := h.reportingService.GetDashboard()
+	if err != nil {
+		pkgresponse.InternalError(c, "Failed to get dashboard data")
+		return
+	}
+
+	pkgresponse.Success(c, dashboard)
+}
